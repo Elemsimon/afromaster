@@ -37,13 +37,10 @@ export async function createCheckoutSession(
   items: CartItem[]
 ): Promise<CheckoutResult> {
   try {
-    // 1. Verify user is authenticated
+    // 1. Check if user is authenticated (optional for guest checkout)
     const { userId } = await auth();
     const user = await currentUser();
-
-    if (!userId || !user) {
-      return { success: false, error: "Please sign in to checkout" };
-    }
+    const isAuthenticated = !!userId && !!user;
 
     // 2. Validate cart is not empty
     if (!items || items.length === 0) {
@@ -109,22 +106,38 @@ export async function createCheckoutSession(
         quantity,
       }));
 
-    // 6. Get or create Stripe customer
-    const userEmail = user.emailAddresses[0]?.emailAddress ?? "";
-    const userName =
-      `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() || userEmail;
+    // 6. Get or create Stripe customer (only if authenticated)
+    let stripeCustomerId: string | undefined;
+    let sanityCustomerId: string | undefined;
+    let userEmail = "";
+    let userName = "";
 
-    const { stripeCustomerId, sanityCustomerId } =
-      await getOrCreateStripeCustomer(userEmail, userName, userId);
+    if (isAuthenticated && user) {
+      userEmail = user.emailAddresses[0]?.emailAddress ?? "";
+      userName =
+        `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() || userEmail;
+
+      const customerData = await getOrCreateStripeCustomer(
+        userEmail,
+        userName,
+        userId!
+      );
+      stripeCustomerId = customerData.stripeCustomerId;
+      sanityCustomerId = customerData.sanityCustomerId;
+    }
 
     // 7. Prepare metadata for webhook
-    const metadata = {
-      clerkUserId: userId,
-      userEmail,
-      sanityCustomerId,
+    const metadata: Record<string, string> = {
       productIds: validatedItems.map((i) => i.product._id).join(","),
       quantities: validatedItems.map((i) => i.quantity).join(","),
     };
+
+    // Add user info to metadata only if authenticated
+    if (isAuthenticated && userId) {
+      metadata.clerkUserId = userId;
+      if (userEmail) metadata.userEmail = userEmail;
+      if (sanityCustomerId) metadata.sanityCustomerId = sanityCustomerId;
+    }
 
     // 8. Create Stripe Checkout Session
     // Priority: NEXT_PUBLIC_BASE_URL > Vercel URL > localhost
@@ -137,7 +150,8 @@ export async function createCheckoutSession(
       mode: "payment",
       payment_method_types: ["card"],
       line_items: lineItems,
-      customer: stripeCustomerId,
+      ...(stripeCustomerId && { customer: stripeCustomerId }),
+      // Stripe will collect email for guest checkouts automatically
       shipping_address_collection: {
         allowed_countries: [
           "GB", // United Kingdom
@@ -210,22 +224,23 @@ export async function createCheckoutSession(
 
 /**
  * Retrieves a checkout session by ID (for success page)
+ * Works for both authenticated and guest checkouts
  */
 export async function getCheckoutSession(sessionId: string) {
   try {
     const { userId } = await auth();
-
-    if (!userId) {
-      return { success: false, error: "Not authenticated" };
-    }
+    const isAuthenticated = !!userId;
 
     const session = await stripe.checkout.sessions.retrieve(sessionId, {
       expand: ["line_items", "customer_details"],
     });
 
-    // Verify the session belongs to this user
-    if (session.metadata?.clerkUserId !== userId) {
-      return { success: false, error: "Session not found" };
+    // If user is authenticated, verify the session belongs to them
+    // For guest checkouts, we allow access if no clerkUserId is in metadata
+    if (isAuthenticated && session.metadata?.clerkUserId) {
+      if (session.metadata.clerkUserId !== userId) {
+        return { success: false, error: "Session not found" };
+      }
     }
 
     return {

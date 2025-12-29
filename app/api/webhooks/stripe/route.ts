@@ -82,8 +82,9 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       quantities: quantitiesString,
     } = session.metadata ?? {};
 
-    if (!clerkUserId || !productIdsString || !quantitiesString) {
-      console.error("Missing metadata in checkout session");
+    // Only productIds and quantities are required (clerkUserId is optional for guest checkout)
+    if (!productIdsString || !quantitiesString) {
+      console.error("Missing required metadata in checkout session");
       return;
     }
 
@@ -132,7 +133,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
           _ref: sanityCustomerId,
         },
       }),
-      clerkUserId,
+      ...(clerkUserId && { clerkUserId }),
       email: userEmail ?? session.customer_details?.email ?? "",
       items: orderItems,
       total: (session.amount_total ?? 0) / 100,
