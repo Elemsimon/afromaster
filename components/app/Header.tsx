@@ -6,6 +6,7 @@ import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { useCartActions, useTotalItems } from "@/lib/store/cart-store-provider";
 import { useChatActions, useIsChatOpen } from "@/lib/store/chat-store-provider";
+import Image from "next/image";
 
 export function Header() {
   const { openCart } = useCartActions();
@@ -19,7 +20,7 @@ export function Header() {
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2">
           <span className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
-            Afromaster
+           <Image src="/logo.png" alt="Afromaster" width={100} height={100} />
           </span>
         </Link>
 
@@ -36,7 +37,7 @@ export function Header() {
           </SignedIn>
 
           {/* AI Shopping Assistant */}
-          {!isChatOpen && (
+          {/* {!isChatOpen && (
             <Button
               onClick={openChat}
               className="gap-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-200/50 transition-all hover:from-amber-600 hover:to-orange-600 hover:shadow-lg hover:shadow-amber-300/50 dark:shadow-amber-900/30 dark:hover:shadow-amber-800/40"
@@ -44,7 +45,7 @@ export function Header() {
               <Sparkles className="h-4 w-4" />
               <span className="text-sm font-medium">Ask AI</span>
             </Button>
-          )}
+          )} */}
 
           {/* Cart Button */}
           <Button
