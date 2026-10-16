@@ -1,18 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { Package, ShoppingBag, Sparkles, User } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { Package, ShoppingBag, User } from "lucide-react";
 import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
+import { STOREFRONT_NAV } from "@/lib/constants/nav";
 import { useCartActions, useTotalItems } from "@/lib/store/cart-store-provider";
-import { useChatActions, useIsChatOpen } from "@/lib/store/chat-store-provider";
 import Image from "next/image";
+import { cn } from "@/lib/utils";
 
 export function Header() {
   const { openCart } = useCartActions();
-  const { openChat } = useChatActions();
-  const isChatOpen = useIsChatOpen();
   const totalItems = useTotalItems();
+  const pathname = usePathname();
 
   return (
     <header className="sticky top-0 z-50 border-b border-zinc-200 bg-white/80 backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-950/80">
@@ -23,6 +24,30 @@ export function Header() {
            <Image src="/logo.png" alt="Afromaster" width={100} height={100} />
           </span>
         </Link>
+
+        <nav className="flex items-center gap-1 sm:gap-2" aria-label="Main">
+          {STOREFRONT_NAV.map((item) => {
+            const isActive =
+              item.href === "/"
+                ? pathname === "/"
+                : pathname.startsWith(item.href);
+
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "rounded-md px-2 py-1.5 text-sm font-medium transition-colors sm:px-3",
+                  isActive
+                    ? "text-zinc-900 dark:text-zinc-100"
+                    : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+                )}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
 
         {/* Actions */}
         <div className="flex items-center gap-2">

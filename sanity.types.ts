@@ -13,6 +13,20 @@
  */
 
 // Source: schema.json
+export type ContactMessage = {
+  _id: string;
+  _type: "contactMessage";
+  _createdAt: string;
+  _updatedAt: string;
+  _rev: string;
+  name?: string;
+  email?: string;
+  subject?: string;
+  message?: string;
+  status?: "new" | "read" | "replied";
+  createdAt?: string;
+};
+
 export type Order = {
   _id: string;
   _type: "order";
@@ -243,7 +257,7 @@ export type Geopoint = {
   alt?: number;
 };
 
-export type AllSanitySchemaTypes = Order | Product | SanityImageCrop | SanityImageHotspot | Slug | Customer | Category | SanityImagePaletteSwatch | SanityImagePalette | SanityImageDimensions | SanityImageMetadata | SanityFileAsset | SanityAssetSourceData | SanityImageAsset | Geopoint;
+export type AllSanitySchemaTypes = ContactMessage | Order | Product | SanityImageCrop | SanityImageHotspot | Slug | Customer | Category | SanityImagePaletteSwatch | SanityImagePalette | SanityImageDimensions | SanityImageMetadata | SanityFileAsset | SanityAssetSourceData | SanityImageAsset | Geopoint;
 export declare const internalGroqTypeReferenceTo: unique symbol;
 // Source: ./lib/sanity/queries/categories.ts
 // Variable: ALL_CATEGORIES_QUERY
